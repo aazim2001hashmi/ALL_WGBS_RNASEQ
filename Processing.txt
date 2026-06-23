@@ -1,0 +1,34 @@
+mkdir fastqc
+fastqc *.fastq.gz -o fastqc
+multiqc fastqc -o multiqc_report
+
+for r1 in *_R1.fastq.gz
+do
+    r2=${r1/_R1/_R2}
+    trim_galore --paired $r1 $r2
+done
+
+bismark_genome_preparation ALL/hg38
+
+for r1 in *_R1_val_1.fq.gz
+do
+    r2=${r1/_R1_val_1/_R2_val_2}
+
+    bismark \
+      --genome /path/to/genome \
+      -1 $r1 \
+      -2 $r2 \
+      -p 16
+done
+
+deduplicate_bismark --paired sample_bismark_bt2_pe.bam
+
+bismark_methylation_extractor \
+    --paired-end \
+    --gzip \
+    --bedGraph \
+    --cytosine_report \
+    --genome_folder /path/to/genome \
+    sample_deduplicated.bam
+
+
